@@ -1,0 +1,14 @@
+{
+  "name": "ansi-pixels",
+  "version": "0.0.0",
+  "description": "ANSI-escape-color pixel arts",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Keiichiro UI",
+  "license": "MIT",
+  "dependencies": {
+    "mkdirp": "^0.4.0"
+  }
+}
