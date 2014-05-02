@@ -11,6 +11,11 @@ var DOT_SIZE = 10; // px
 var X_OFFSET = 1;
 var Y_OFFSET = 1;
 
+// html setting
+var BASE_URL = 'http://kui.github.io/ansi-pixels';
+var STYLE =
+  'code { background-color: black; color: white; padding: 5px; }';
+
 ////////////////////////////////////////
 
 'use strict';
@@ -62,10 +67,15 @@ function buildIndexPage(entries) {
   mkdirp(path.dirname(ABS_INDEX_PAGE_NAME), function(err) {
     if (err) throw err;
     var items = entries.map(function(e) {
-      return util.format('<h3>%s</h3>\n<a href="%s"><img src="%s"></a>\n\n',
-                         e.name, e.linkPath, e.linkPath);
+      return util.format('<h3>%s</h3>\n' +
+                         '<a href="%s"><img src="%s"></a><br>\n' +
+                         '<code>curl -s %s</code>\n',
+                         e.name, e.linkPath, e.linkPath, e.ansiLinkPath);
     }).join('');
-    var html = util.format('<ul>\n%s</ul>', items);
+    var html = util.format('<head>\n' +
+                           '<style>%s</style>' +
+                           '</head>\n' +
+                           '<ul>\n%s</ul>', STYLE, items);
 
     dumpData(ABS_INDEX_PAGE_NAME, html);
   });
@@ -182,6 +192,7 @@ var Entry = (function() {
     this.outputPath = createOutputPath(this.sourcePath);
     this.ansiPath = createAnsiPath(this.sourcePath);
     this.linkPath = createLinkPath(this.outputPath);
+    this.ansiLinkPath = createAnsiLinkPath(this.ansiPath);
   };
 
   // public methods
@@ -213,6 +224,9 @@ var Entry = (function() {
   var createLinkPath = function(outputPath) {
     return outputPath.replace(new RegExp('^' + __dirname + '/'), '');
   };
+  var createAnsiLinkPath = function(ansiPath) {
+    return BASE_URL + ansiPath.replace(new RegExp('^' + __dirname), '');
+  }
 
   return _Entry;
 })();
