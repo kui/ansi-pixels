@@ -211,7 +211,7 @@ var Entry = (function() {
     return util.format(format, baseName);
   };
   var createLinkPath = function(outputPath) {
-    return outputPath.replace(new RegExp('^' + __dirname), '');
+    return outputPath.replace(new RegExp('^' + __dirname + '/'), '');
   };
 
   return _Entry;
