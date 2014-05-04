@@ -5,6 +5,7 @@ var DATA_PATH = 'data'
 var INDEX_PAGE_NAME = 'index.html'
 var ENTRY_PAGE_NAME = 'entry/%s.svg'
 var ENTRY_ANSI_NAME = 'entry/%s.dat'
+var ENTRY_SCRIPT_NAME = 'entry/%s.sh'
 
 // svg setting
 var DOT_SIZE = 10; // px
@@ -14,7 +15,9 @@ var Y_OFFSET = 1;
 // html
 var BASE_URL = 'http://kui.github.io/ansi-pixels';
 var STYLE =
-  'code { background-color: black; color: white; padding: 5px; }';
+  ['code.terminal { background-color: black; color: white; padding: 5px; font-size: 90%; display:block }',
+   'th { text-align: right; }'
+  ].join('\n');
 var GH_REBBON = '<a href="https://github.com/you"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/365986a132ccd6a44c23a9169022c0b5c890c387/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f7265645f6161303030302e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png"></a>';
 
 ////////////////////////////////////////
@@ -36,6 +39,7 @@ var ABS_DATA_PATH = path.resolve(__dirname, DATA_PATH);
 var ABS_INDEX_PAGE_NAME = path.resolve(__dirname, INDEX_PAGE_NAME);
 var ABS_ENTRY_PAGE_NAME = path.resolve(__dirname, ENTRY_PAGE_NAME);
 var ABS_ENTRY_ANSI_NAME = path.resolve(__dirname, ENTRY_ANSI_NAME);
+var ABS_ENTRY_SCRIPT_NAME = path.resolve(__dirname, ENTRY_SCRIPT_NAME);
 var ANSI_COLORS = {
   '0': 'black', '1': 'red', '2': 'green', '3': 'yellow', '4': 'blue',
   '5': 'purple', '6': 'cyan', '7': 'white', '8': 'gray'
@@ -72,10 +76,19 @@ function buildIndexPage(entries) {
   mkdirp(path.dirname(ABS_INDEX_PAGE_NAME), function(err) {
     if (err) throw err;
     var items = entries.map(function(e) {
-      return util.format('<h3>%s</h3>\n' +
-                         '<a href="%s"><img src="%s"></a><br>\n' +
-                         '<code>curl -s %s</code>\n',
-                         e.name, e.linkPath, e.linkPath, e.ansiLinkPath);
+      // TODO refactor
+      return util.format(['<div class="entry">',
+                          '  <h3>%s</h3>',
+                          '  <div><a href="%s"><img src="%s"></a></div>',
+                          '  <table>',
+                          '    <tr><th>print:</th>',
+                          '      <td><code class="terminal">curl -s %s</code></td></tr>',
+                          '    <tr><th>download:</th>',
+                          '      <td><code class="terminal">wget %s && bash %s</code></td></tr>',
+                          '  </table>',
+                          '</div>', '', ''].join('\n'),
+                         e.name, e.linkPath, e.linkPath, e.ansiLink,
+                         e.scriptLink, path.basename(e.scriptLink));
     }).join('');
     var body = items;
     var html = [HEAD, HEADER, body].join('\n')
@@ -98,6 +111,8 @@ function buildEntryPage(entry) {
     });
     createAnsi(entry.sourcePath, function(ansi) {
       dumpData(entry.ansiPath, ansi);
+      var script = attachPrinterScript(ansi)
+      dumpData(entry.scriptPath, script);
     });
   });
 }
@@ -175,6 +190,17 @@ function createAnsi(sourcePath, callback) {
   });
 }
 
+function attachPrinterScript(printedData) {
+  return ['#!/bin/sh -eu',
+          '(',
+          '  while read line; do [ "$line" = "###FILE###" ] && break; done',
+          '  cat',
+          ') < $0',
+          'exit 0',
+          '###FILE###',
+          printedData].join('\n');
+}
+
 function dumpData(path, data) {
   fs.writeFile(path, data, function(err) {
     if (err) throw err;
@@ -192,17 +218,19 @@ var Entry = (function() {
     this.sourcePath = filePath;
     this.name = createName(this.sourcePath);
     this.outputPath = createOutputPath(this.sourcePath);
-    this.ansiPath = createAnsiPath(this.sourcePath);
     this.linkPath = createLinkPath(this.outputPath);
-    this.ansiLinkPath = createAnsiLinkPath(this.ansiPath);
+    this.ansiPath = createAnsiPath(this.sourcePath);
+    this.ansiLink = createUrl(this.ansiPath);
+    this.scriptPath = createScriptPath(this.sourcePath);
+    this.scriptLink = createUrl(this.scriptPath);
   };
 
   // public methods
   _Entry.prototype = {
     toString: function() {
-      var attrs = [this.sourcePath, this.outputPath].map(function(a) {
-        return util.format('"%s"', a);
-      }).join(', ');
+      var attrs = [this.sourcePath, this.outputPath]
+        .map(function(a) { return util.format('"%s"', a); })
+        .join(', ');
       return util.format('Entry(%s)', attrs);
     }
   };
@@ -219,6 +247,9 @@ var Entry = (function() {
   var createAnsiPath = function(filePath) {
     return createFormatedPath(filePath, ABS_ENTRY_ANSI_NAME);
   };
+  var createScriptPath = function(filePath) {
+    return createFormatedPath(filePath, ABS_ENTRY_SCRIPT_NAME);
+  };
   var createFormatedPath = function(filePath, format) {
     var baseName = path.relative(ABS_DATA_PATH, filePath).replace(/\.dat$/, '');
     return util.format(format, baseName);
@@ -226,9 +257,9 @@ var Entry = (function() {
   var createLinkPath = function(outputPath) {
     return outputPath.replace(new RegExp('^' + __dirname + '/'), '');
   };
-  var createAnsiLinkPath = function(ansiPath) {
+  var createUrl = function(ansiPath) {
     return BASE_URL + ansiPath.replace(new RegExp('^' + __dirname), '');
-  }
+  };
 
   return _Entry;
 })();
