@@ -77,7 +77,7 @@ function buildIndexPage(entries) {
                          '<code>curl -s %s</code>\n',
                          e.name, e.linkPath, e.linkPath, e.ansiLinkPath);
     }).join('');
-    var body = ['<ul>', items, '</ul>'].join('\n')
+    var body = items;
     var html = [HEAD, HEADER, body].join('\n')
     dumpData(ABS_INDEX_PAGE_NAME, html);
   });
