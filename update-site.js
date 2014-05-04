@@ -128,7 +128,7 @@ function createSvg(sourcePath, callback) {
     data.split('').forEach(function(c) {
       if (c === ' ') {
         // no-op
-        rects += '<!-- blank -->\n'
+        // rects += '<!-- blank -->\n'
         x++;
       } else if (c === '\n') {
         if (maxX < x) maxX = x;
